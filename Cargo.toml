@@ -8,6 +8,8 @@ edition = "2018"
 [dependencies]
 # To get the time
 chrono = "0.4.19"
+# To parse command line arguments
+clap = "2.33.3"
 # Disord rich presence implementation
 discord-rpc-client = "0.3.0"
 # Logging

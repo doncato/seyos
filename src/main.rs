@@ -3,6 +3,7 @@
 
 // Imports
 use chrono::Utc;
+use clap::{App, Arg, SubCommand};
 use discord_rpc_client::Client as RPC;
 use log::*;
 use std::{
@@ -15,6 +16,40 @@ use sysinfo::{System, SystemExt};
 // Main function
 fn main() {
     info!("Started");
+
+    // Get command line parameters
+    let options = App::new("SEYOS - Show 'em your OS")
+        .version("1.0")
+        .author("doncato <don.cato.dc11@gmail.com>")
+        .about("Display your Operating System Information in a Discord Rich Presence")
+        .arg(
+            Arg::with_name("short-os-name")
+                .short("s")
+                .long("short-os-name")
+                .help("Uses the short OS name in the presence information (may not make a difference depending on your OS)")
+        )
+        .arg(
+            Arg::with_name("include-kernel")
+                .short("k")
+                .long("include-kernel")
+                .help("Include the kernel version with the OS name")
+        )
+        .arg(
+            Arg::with_name("additional-information")
+                .short("a")
+                .long("additional-information")
+                .takes_value(true)
+                .value_name("information-key")
+                .help("Set which additional information about your system should be displayed (use -l to get a list)")
+        )
+        .arg(
+            Arg::with_name("application-time")
+                .short("t")
+                .long("application-time")
+                .help("Display the time since the Application was started instead of system uptime")
+        )
+        .get_matches();
+
     // Set the System Instance
     let mut sys = System::new_all();
     // Set the Discord Client instance
@@ -36,9 +71,19 @@ fn main() {
         debug!("Started the main event loop");
         sys.refresh_system();
         let os = get_os(&sys);
-        infos.os_name = sys.long_os_version().unwrap_or(os.0);
+        infos.os_name = if options.is_present("short-os-name") {
+            os.0
+        } else {
+            sys.long_os_version().unwrap_or(os.0)
+        };
+        if options.is_present("include-kernel") {
+            infos.os_name =
+                infos.os_name + " " + &sys.kernel_version().unwrap_or("0.0".to_string());
+        }
         infos.asset_name = os.1;
-        infos.uptime = sys.boot_time();
+        if !options.is_present("application-time") {
+            infos.uptime = sys.boot_time()
+        };
         infos.information = format!("Load: {}", sys.load_average().five);
 
         let set = infos.set(rpc);
