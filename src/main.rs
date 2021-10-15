@@ -38,7 +38,7 @@ fn main() {
         let os = get_os(&sys);
         infos.os_name = sys.long_os_version().unwrap_or(os.0);
         infos.asset_name = os.1;
-        infos.uptime = sys.uptime();
+        infos.uptime = sys.boot_time();
         infos.information = format!("Load: {}", sys.load_average().five);
 
         let set = infos.set(rpc);
@@ -106,6 +106,7 @@ impl PresenceInfo {
         match discord_rpc.set_activity(|a| {
             a.state(&self.information)
                 .details(&self.os_name)
+                .timestamps(|time| time.start(self.uptime))
                 .assets(|ass| {
                     ass.large_image(&self.asset_name)
                         .large_text(&self.asset_name)
