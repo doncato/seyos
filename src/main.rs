@@ -3,7 +3,7 @@
 
 // Imports
 use chrono::Utc;
-use clap::{App, Arg, SubCommand};
+use clap::{App, Arg};
 use discord_rpc_client::Client as RPC;
 use log::*;
 use std::{
@@ -11,7 +11,7 @@ use std::{
     thread,
     time::{Duration, SystemTime},
 };
-use sysinfo::{System, SystemExt};
+use sysinfo::{ComponentExt, ProcessorExt, System, SystemExt};
 
 // Main function
 fn main() {
@@ -39,8 +39,15 @@ fn main() {
                 .short("a")
                 .long("additional-information")
                 .takes_value(true)
-                .value_name("information-key")
+                //.value_name("information-key")
                 .help("Set which additional information about your system should be displayed (use -l to get a list)")
+        )
+        .arg(
+            Arg::with_name("list-available-information")
+                .short("l")
+                .long("list-additional-information")
+                .overrides_with_all(&["short-os-name", "include-kernel", "additional-information", "application-time"])
+                .help("List additional information available to be displayed")
         )
         .arg(
             Arg::with_name("application-time")
@@ -49,6 +56,12 @@ fn main() {
                 .help("Display the time since the Application was started instead of system uptime")
         )
         .get_matches();
+
+    // If requested, list all possibilities of infos
+    if options.is_present("list-available-information") {
+        print!("{}", AvailableInfos::get_all());
+        return;
+    }
 
     // Set the System Instance
     let mut sys = System::new_all();
@@ -84,7 +97,12 @@ fn main() {
         if !options.is_present("application-time") {
             infos.uptime = sys.boot_time()
         };
-        infos.information = format!("Load: {}", sys.load_average().five);
+        infos.information = if !options.is_present("additional-info") {
+            format!("Load: {}", sys.load_average().five)
+        } else {
+            parse_infos(options.value_of("additional-information").unwrap_or("load"))
+                .get_requested(&sys)
+        };
 
         let set = infos.set(rpc);
         rpc = set.0;
@@ -118,6 +136,61 @@ fn get_os(system: &System) -> (String, String) {
         .to_string();
 
     return (name, identifier);
+}
+
+fn parse_infos(input: &str) -> AvailableInfos {
+    let i = input.to_lowercase();
+    let r = match i.trim() {
+        "hostname" => AvailableInfos::Hostname,
+        "average temperature" => AvailableInfos::AvgTemperature,
+        "memory" => AvailableInfos::Memory,
+        "cpu" => AvailableInfos::Cpu,
+        _ => AvailableInfos::Load,
+    };
+    return r;
+}
+
+enum AvailableInfos {
+    Hostname,
+    AvgTemperature,
+    Memory,
+    Cpu,
+    Load,
+}
+impl AvailableInfos {
+    fn get_all() -> String {
+        "Hostname\nAverage Temperature\nMemory\nCpu".to_string()
+    }
+    fn get_requested(self, system: &System) -> String {
+        match self {
+            AvailableInfos::Hostname => system
+                .host_name()
+                .unwrap_or(system.name().unwrap_or("".to_string())),
+            AvailableInfos::AvgTemperature => {
+                let mut avg: f32 = 0.0;
+                let length: f32 = system.components().len() as f32;
+                for i in system.components().iter() {
+                    avg = avg + i.temperature();
+                }
+                format!("{0:.2} °C", avg / length)
+            }
+            AvailableInfos::Memory => format!(
+                "{0:.2}/{1:.2} GB RAM",
+                (system.available_memory() / 1_048_576),
+                (system.total_memory() / 1_048_576)
+            ),
+            AvailableInfos::Cpu => {
+                let cpu = system.global_processor_info();
+                format!(
+                    "{0} Ghz ({1:.2}%) {2}",
+                    cpu.frequency() / 1000,
+                    cpu.cpu_usage(),
+                    cpu.name()
+                )
+            }
+            AvailableInfos::Load => format!("Load: {}", system.load_average().five),
+        }
+    }
 }
 
 struct PresenceInfo {
