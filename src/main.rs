@@ -39,7 +39,6 @@ fn main() {
                 .short("a")
                 .long("additional-information")
                 .takes_value(true)
-                //.value_name("information-key")
                 .help("Set which additional information about your system should be displayed (use -l to get a list)")
         )
         .arg(
@@ -97,7 +96,7 @@ fn main() {
         if !options.is_present("application-time") {
             infos.uptime = sys.boot_time()
         };
-        infos.information = if !options.is_present("additional-info") {
+        infos.information = if !options.is_present("additional-information") {
             format!("Load: {}", sys.load_average().five)
         } else {
             parse_infos(options.value_of("additional-information").unwrap_or("load"))
@@ -159,7 +158,7 @@ enum AvailableInfos {
 }
 impl AvailableInfos {
     fn get_all() -> String {
-        "Hostname\nAverage Temperature\nMemory\nCpu".to_string()
+        "Hostname\nAverage Temperature\nMemory\nCpu\n".to_string()
     }
     fn get_requested(self, system: &System) -> String {
         match self {
