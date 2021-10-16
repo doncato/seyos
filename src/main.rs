@@ -141,7 +141,7 @@ fn parse_infos(input: &str) -> AvailableInfos {
     let i = input.to_lowercase();
     let r = match i.trim() {
         "hostname" => AvailableInfos::Hostname,
-        "average temperature" => AvailableInfos::AvgTemperature,
+        "average-temperature" => AvailableInfos::AvgTemperature,
         "memory" => AvailableInfos::Memory,
         "cpu" => AvailableInfos::Cpu,
         _ => AvailableInfos::Load,
@@ -158,7 +158,7 @@ enum AvailableInfos {
 }
 impl AvailableInfos {
     fn get_all() -> String {
-        "Hostname\nAverage Temperature\nMemory\nCpu\n".to_string()
+        "Hostname\nAverage-Temperature\nMemory\nCpu\n".to_string()
     }
     fn get_requested(self, system: &System) -> String {
         match self {
@@ -175,17 +175,12 @@ impl AvailableInfos {
             }
             AvailableInfos::Memory => format!(
                 "{0:.2}/{1:.2} GB RAM",
-                (system.available_memory() / 1_048_576),
-                (system.total_memory() / 1_048_576)
+                (system.available_memory() / 1_000_000),
+                (system.total_memory() / 1_000_000)
             ),
             AvailableInfos::Cpu => {
                 let cpu = system.global_processor_info();
-                format!(
-                    "{0} Ghz ({1:.2}%) {2}",
-                    cpu.frequency() / 1000,
-                    cpu.cpu_usage(),
-                    cpu.name()
-                )
+                format!("{0} ({1:.2}%)", cpu.brand(), cpu.cpu_usage())
             }
             AvailableInfos::Load => format!("Load: {}", system.load_average().five),
         }
