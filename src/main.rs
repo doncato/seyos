@@ -194,15 +194,6 @@ struct PresenceInfo {
     uptime: u64,
 }
 impl PresenceInfo {
-    /// Create a new Presence Info
-    fn new(os_name: String, information: String, asset_name: String, uptime: u64) -> Self {
-        PresenceInfo {
-            os_name,
-            information,
-            asset_name,
-            uptime,
-        }
-    }
     /// Create an empty Presence Info
     fn empty() -> Self {
         PresenceInfo {
