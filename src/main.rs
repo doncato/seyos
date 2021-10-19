@@ -65,14 +65,16 @@ fn main() {
     // Set the System Instance
     let mut sys = System::new_all();
     sys.refresh_system();
-    let platform = get_os(&sys).1;
-    //let mac = "mac".to_string();
+    let platform = &sys.long_os_version().unwrap_or(get_os(&sys).0).to_lowercase();
     // Set the Discord Client instance
-    let mut rpc = RPC::new(match platform.as_ref() {
-        "darwin" => 899912704188379136,
-        "windows" => 0,
-        _ => 898584015076982865,
-    });
+    let mut rpc = RPC::new( if platform.starts_with("mac") {
+            899912704188379136
+        } else if platform.starts_with("win") {
+            0
+        } else {
+            898584015076982865
+        }
+    );
     let refresh_time = 20;
     let refresh_interval = Duration::from_secs(refresh_time);
 
@@ -104,7 +106,7 @@ fn main() {
             infos.uptime = sys.boot_time()
         };
         infos.information = if !options.is_present("additional-information") {
-            format!("Load: {}", sys.load_average().five)
+            format!("Load: {:.2}", sys.load_average().five)
         } else {
             parse_infos(options.value_of("additional-information").unwrap_or("load"))
                 .get_requested(&sys)
@@ -128,11 +130,11 @@ fn main() {
 
 /// A function to get the os name, returns a
 /// tuple of the name, and a lowercase identifier (e.g. 'arch'
-/// or 'ubuntu'). If the detection fails ("Linux", "default")
+/// or 'ubuntu'). If the detection fails ("unknown", "default")
 /// are returned.
 fn get_os(system: &System) -> (String, String) {
     let sys_name = system.name();
-    let name = sys_name.clone().unwrap_or("Linux".to_string());
+    let name = sys_name.clone().unwrap_or("unknown".to_string());
     let identifier = sys_name
         .unwrap_or("default".to_string())
         .to_string()
@@ -205,7 +207,7 @@ impl PresenceInfo {
     /// Create an empty Presence Info
     fn empty() -> Self {
         PresenceInfo {
-            os_name: "linux".to_string(),
+            os_name: "unknown".to_string(),
             information: "".to_string(),
             asset_name: "default".to_string(),
             uptime: u64::try_from(Utc::now().timestamp()).expect("Time went backwards."),
