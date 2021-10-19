@@ -19,7 +19,7 @@ fn main() {
 
     // Get command line parameters
     let options = App::new("SEYOS - Show 'em your OS")
-        .version("1.0")
+        .version("1.1")
         .author("doncato <don.cato.dc11@gmail.com>")
         .about("Display your Operating System Information in a Discord Rich Presence")
         .arg(
