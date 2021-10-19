@@ -64,8 +64,15 @@ fn main() {
 
     // Set the System Instance
     let mut sys = System::new_all();
+    sys.refresh_system();
+    let platform = get_os(&sys).1;
+    //let mac = "mac".to_string();
     // Set the Discord Client instance
-    let mut rpc = RPC::new(898584015076982865);
+    let mut rpc = RPC::new(match platform.as_ref() {
+        "darwin" => 899912704188379136,
+        "windows" => 0,
+        _ => 898584015076982865,
+    });
     let refresh_time = 20;
     let refresh_interval = Duration::from_secs(refresh_time);
 
@@ -131,6 +138,7 @@ fn get_os(system: &System) -> (String, String) {
         .to_string()
         .to_lowercase()
         .replace("linux", "")
+        .replace("os", "")
         .trim()
         .to_string();
 
